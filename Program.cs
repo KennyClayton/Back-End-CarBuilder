@@ -128,8 +128,80 @@ List<Wheels> wheels = new List<Wheels> {
     }
 };
 
-//^ CREATE a new list of orders //leave empty for now...
+//^ CREATE a new list of orders ... leave empty for now
 List<Order> orders = new List<Order> {};
+
+
+//^ENDPOINT for getting all wheels
+app.MapGet("/wheels", () => 
+{
+   return wheels; 
+});
+
+
+//^ENDPOINT for getting all technologies
+app.MapGet("/technologies", () => 
+{
+   return technologies; 
+});
+
+
+//^ENDPOINT for getting all interiors
+app.MapGet("/interiors", () => 
+{
+   return interiors; 
+});
+
+
+//^ENDPOINT for getting all paintColors
+app.MapGet("/paintColors", () => 
+{
+   return paintColors; 
+});
+
+
+//^ENDPOINT for getting all orders
+// What are we trying to accomplish here? We want to pull up ALL orders in the database when we navigate to /orders. So why can't we just return orders?
+app.MapGet("/orders", () => 
+{   // Why use Select method on the orders list here? Because the Select method is for assembling data from different sources and projecting (transforms) that data into a new object of its own. The new object is its own creation and construction. It is created from multiple sources/collections. So when you need to assemble this new Order instance from multiple collections, you have to take the user's chocen Ids for each collection and find it (with FirstOrDefault) and THEN all of those chosen objects get assembled with Select method. 
+    var orderAssembled = orders.Select(order => new
+    {
+        order.Id,
+        order.Timestamp,
+        Wheel = wheels.FirstOrDefault(wheel => wheel.Id == order.WheelId), //look up the entire related wheel object, meaning all of its properties too. If we coded just order.WheelId, this would only return the Id of that wheel object, not its color or other properties.
+        Technology = technologies.FirstOrDefault(tech => tech.Id == order.TechnologyId), // look up the entire related tech option object
+        PaintColor = paintColors.FirstOrDefault(color => color.Id == order.PaintId),
+        Interior = interiors.FirstOrDefault(interior => interior.Id == order.InteriorId)
+    }
+    );
+
+    return orderAssembled;
+}
+);
+
+//^ ENDPOINT - add endpoint to POST a new order to the database
+// The below "handler" tells the API two things: WHERE to go online and WHAT to do when we get there.
+app.MapPost("/orders", (Order order) => // pass parameters for url and allow the order list to come into this method/function so we can access it/reference it
+{
+    //Since we are creating a new order, we need to create a new Id
+    order.Id = orders.Count > 0 ? orders.Max(o => o.Id) + 1 : 1; // so to create a new order Id we count the orders with .Max and add one. The ternary says to assign "1" if there are no existing orders.
+    //But what is the lambda expression saying after .Max?
+        // It's saying "look at all the order Ids on all of the orders and find the max/highest order Id integer. Then we plus one that number.
+        //* So we find the max orderId integer and add one
+    // include a time stamp on the order
+    order.Timestamp = DateTime.Now;
+    // this adds the new order we defined above to the orders list
+    orders.Add(order); 
+    // POST method on the new order object
+    return order;
+}   
+);
+
+
+
+
+
+
 
 
 app.Run();
