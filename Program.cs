@@ -1,9 +1,13 @@
+using CarBuilder.Models;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+//* CORS - the security demands built into a browser can be satisfied by implementing CORS. "Our API is now telling the browser that it is safe to request the data from any origin."
+builder.Services.AddCors(); //* allows cross-origin resource sharing since our API is serving the data our browser is asking for. Otherwise the browser's security features won't allow access to our API bc it could be a malicious source.
 
 var app = builder.Build();
 
@@ -12,6 +16,12 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    app.UseCors(options => //* "Our API is now telling the browser that it is safe to request the data from any origin."
+    {
+        options.AllowAnyOrigin();
+        options.AllowAnyMethod();
+        options.AllowAnyHeader();
+    });
 }
 
 app.UseHttpsRedirection();
@@ -129,7 +139,15 @@ List<Wheels> wheels = new List<Wheels> {
 };
 
 //^ CREATE a new list of orders ... leave empty for now
-List<Order> orders = new List<Order> {};
+List<Order> orders = new List<Order> 
+{
+    new Order
+    {
+        Id = 1,
+        WheelId = 1,
+        TechnologyId = 1,        
+    } 
+};
 
 
 //^ENDPOINT for getting all wheels
@@ -162,20 +180,15 @@ app.MapGet("/paintColors", () =>
 
 //^ENDPOINT for getting all orders
 // What are we trying to accomplish here? We want to pull up ALL orders in the database when we navigate to /orders. So why can't we just return orders?
-app.MapGet("/orders", () => 
-{   // Why use Select method on the orders list here? Because the Select method is for assembling data from different sources and projecting (transforms) that data into a new object of its own. The new object is its own creation and construction. It is created from multiple sources/collections. So when you need to assemble this new Order instance from multiple collections, you have to take the user's chocen Ids for each collection and find it (with FirstOrDefault) and THEN all of those chosen objects get assembled with Select method. 
-    var orderAssembled = orders.Select(order => new
+app.MapGet("/orders/", () => 
+{   // I am not now using it but i did use a select method before. WHy? We use Select method on the orders list here? Because the Select method is for assembling data from different sources and projecting (transforms) that data into a new object of its own. The new object is its own creation and construction. It is created from multiple sources/collections. So when you need to assemble this new Order instance from multiple collections, you have to take the user's chosen Ids for each collection and find it (with FirstOrDefault) and THEN all of those chosen objects get assembled with Select method. 
+    foreach(Order order in orders)
     {
-        order.Id,
-        order.Timestamp,
-        Wheel = wheels.FirstOrDefault(wheel => wheel.Id == order.WheelId), //look up the entire related wheel object, meaning all of its properties too. If we coded just order.WheelId, this would only return the Id of that wheel object, not its color or other properties.
-        Technology = technologies.FirstOrDefault(tech => tech.Id == order.TechnologyId), // look up the entire related tech option object
-        PaintColor = paintColors.FirstOrDefault(color => color.Id == order.PaintId),
-        Interior = interiors.FirstOrDefault(interior => interior.Id == order.InteriorId)
+        order.Wheels = wheels.FirstOrDefault(w => w.Id == order.WheelId);
+        order.Technology = technologies.FirstOrDefault(t => t.Id == order.TechnologyId);
+        order.Interior = interiors.FirstOrDefault(w => w.Id == order.InteriorId);
+        order.PaintColor = paintColors.FirstOrDefault(w => w.Id == order.PaintId);
     }
-    );
-
-    return orderAssembled;
 }
 );
 

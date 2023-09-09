@@ -1,4 +1,4 @@
-
+namespace CarBuilder.Models;
 public class PaintColor
 {
     public int Id { get; set; }

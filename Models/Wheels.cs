@@ -1,3 +1,5 @@
+namespace CarBuilder.Models;
+
 public class Wheels
 {
     public int Id { get; set; }

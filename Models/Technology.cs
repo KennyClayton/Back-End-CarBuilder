@@ -1,3 +1,4 @@
+namespace CarBuilder.Models;
 public class Technology
 {
     public int Id { get; set; }
